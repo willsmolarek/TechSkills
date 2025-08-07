@@ -1,70 +1,77 @@
-import express, {Request, Response} from 'express';
-import { IUser } from './interfaces/IUser';
+import express, { Request, Response } from "express";
+import { ITodo } from "./models";
 
 const app = express();
+const port = 3000;
+
 app.use(express.json());
 
-let users: IUser[] = [
-    { id: 1, name: "João", email: "joao@email.com" },
-    { id: 2, name: "Maria", email: "maria@email.com" },
-  ];
+let todos: ITodo[] = [
+  { id: 1, title: "Estudar TypeScript", completed: false },
+  { id: 2, title: "Fazer API REST", completed: false }
+];
 
-app.get('/users', (req: Request, res: Response<IUser[]>)=>{
-    res.json(users);
+app.get("/todos", (req: Request, res: Response) => {
+  res.json(todos);
 });
 
-app.get('/users/:id', (req: Request<{ id: string }>, res: Response<IUser | { message: string }>) => {
-    const id = parseInt(req.params.id);
-    const user = users.find(u => u.id === id);
-  
-    if (!user) {
-      return res.status(404).json({ message: 'Usuário não encontrado' });
-    }
-  
-    res.json(user);
-  });
+app.get("/todos/:id", (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const todo = todos.find(t => t.id === id);
 
-  app.post('/users', (req: Request<{}, {}, IUser>, res: Response<IUser | { message: string }>) => {
-    const { id, name, email } = req.body;
-  
-    if (!id || !name || !email) {
-      return res.status(400).json({ message: 'Dados inválidos' });
-    }
-  
-    const exists = users.some(u => u.id === id);
-    if (exists) {
-      return res.status(409).json({ message: 'Usuário com esse ID já existe' });
-    }
-  
-    const newUser: IUser = { id, name, email };
-    users.push(newUser);
-    res.status(201).json(newUser);
-  });
+  if (!todo) {
+    return res.status(404).json({ message: "Tarefa não encontrada" });
+  }
 
-  app.put('/users/:id', (req: Request<{ id: string }, {}, Partial<IUser>>, res: Response<IUser | { message: string }>) => {
-    const id = parseInt(req.params.id);
-    const index = users.findIndex(u => u.id === id);
-  
-    if (index === -1) {
-      return res.status(404).json({ message: 'Usuário não encontrado' });
-    }
-  
-    users[index] = { ...users[index], ...req.body };
-    res.json(users[index]);
-  });
+  res.json(todo);
+});
 
-  app.delete('/users/:id', (req: Request<{ id: string }>, res: Response<{ message: string }>) => {
-    const id = parseInt(req.params.id);
-    const index = users.findIndex(u => u.id === id);
-  
-    if (index === -1) {
-      return res.status(404).json({ message: 'Usuário não encontrado' });
-    }
-  
-    users.splice(index, 1);
-    res.json({ message: 'Usuário removido com sucesso' });
-  });
+app.post("/todos", (req: Request, res: Response) => {
+  const { id, title, description, completed } = req.body;
 
-  app.listen(3000, () => {
-    console.log('Servidor rodando na porta 3000');
-  });
+  if (!id || !title || typeof completed !== "boolean") {
+    return res.status(400).json({ message: "Dados inválidos" });
+  }
+
+  if (todos.find(t => t.id === id)) {
+    return res.status(400).json({ message: "ID já existe" });
+  }
+
+  const newTodo: ITodo = { id, title, description, completed };
+  todos.push(newTodo);
+
+  res.status(201).json(newTodo);
+});
+
+app.put("/todos/:id", (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const { title, description, completed } = req.body;
+
+  const index = todos.findIndex(t => t.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ message: "Tarefa não encontrada" });
+  }
+
+  if (title !== undefined) todos[index].title = title;
+  if (description !== undefined) todos[index].description = description;
+  if (completed !== undefined) todos[index].completed = completed;
+
+  res.json(todos[index]);
+});
+
+app.delete("/todos/:id", (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const index = todos.findIndex(t => t.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ message: "Tarefa não encontrada" });
+  }
+
+  todos.splice(index, 1);
+  res.json({ message: "Tarefa removida com sucesso" });
+});
+
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});
